@@ -10,8 +10,20 @@ interface DropRequestBody {
     userId: number;
 }
 
+interface Drop {
+  drop_id: string;
+  user_first_name: string;
+  user_last_name: string;
+  album_name: string;
+  artist_name: string;
+  drop_date: string;
+  cover_url: string;
+  user_email: string;
+}
+
 export async function GET(request: Request) {
   try {
+
     const latestParam = new URL(request.url).searchParams.get('latest');
     const result = await all(`
         SELECT
@@ -36,14 +48,22 @@ export async function GET(request: Request) {
         ${latestParam ? 'LIMIT 1' : ''}
     `);
 
-    result.map((drop: any) => {
+    const drops: Drop[] = result.map((drop: Record<string, unknown>) => {
       const date = new Date();
-      date.setTime(+drop.drop_date);
-      drop.drop_date = date.toLocaleDateString();
-      return drop;
+      date.setTime(drop.drop_date as number);
+      return {
+        drop_id: drop.drop_id as string,
+        user_first_name: drop.user_first_name as string,
+        user_last_name: drop.user_last_name as string,
+        album_name: drop.album_name as string,
+        artist_name: drop.artist_name as string,
+        drop_date: date.toLocaleDateString(),
+        cover_url: drop.cover_url as string,
+        user_email: drop.user_email as string,
+      };
     });
 
-    return NextResponse.json(latestParam ? result[0] || '' : result, { status: 200 });
+    return NextResponse.json(latestParam ? drops[0] || '' : drops, { status: 200 });
   } catch (error) {
     return NextResponse.json({ error: `Failed to fetch drops: ${error}` }, { status: 500 });
   }
