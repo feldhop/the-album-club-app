@@ -2,6 +2,7 @@
 
 import 'tailwindcss/tailwind.css';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 interface Drop {
   id: number;
@@ -20,7 +21,7 @@ export default function HomePage() {
   useEffect(() => {
     async function fetchLatestDrop() {
       try {
-        const response = await fetch('/api/drops');
+        const response = await fetch('/api/drops?latest=true');
         if (!response.ok) {
           throw new Error('Failed to fetch latest drop');
         }
@@ -52,9 +53,6 @@ export default function HomePage() {
     return <div className="flex items-center justify-center h-screen bg-gray-900 text-white">No drops available</div>;
   }
 
-  const dropDate = new Date();
-  dropDate.setTime(+latestDrop.drop_date);
-
   return (
     <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
       <div className="bg-gray-800 shadow-md rounded-lg p-6 max-w-md">
@@ -63,7 +61,10 @@ export default function HomePage() {
         <p><strong>Dropper:</strong> {latestDrop.user_first_name}</p>
         <p><strong>Album:</strong> {latestDrop.album_name}</p>
         <p><strong>Artist:</strong> {latestDrop.artist_name}</p>
-        <p><strong>Date:</strong> {dropDate.toLocaleDateString()}</p>
+        <p><strong>Date:</strong> {latestDrop.drop_date}</p>
+        <Link href="/drops">
+          <button className="mt-4 inline-block bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600">View All Drops</button>
+        </Link>
       </div>
     </div>
   );

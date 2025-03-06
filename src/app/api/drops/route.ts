@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { get, run } from '../../lib/db';
+import { get, all, run } from '../../lib/db';
 
 interface DropRequestBody {
     artistName: string;
@@ -10,10 +10,10 @@ interface DropRequestBody {
     userId: number;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    
-    const result = await get(`
+    const latestParam = new URL(request.url).searchParams.get('latest');
+    const result = await all(`
         SELECT
             Drops.id AS drop_id,
             Users.first_name AS user_first_name,
@@ -33,9 +33,17 @@ export async function GET() {
             Artists ON Albums.artist = Artists.id
         ORDER BY
             Drops.date DESC
-        LIMIT 1
+        ${latestParam ? 'LIMIT 1' : ''}
     `);
-    return NextResponse.json(result, { status: 200 });
+
+    result.map((drop: any) => {
+      const date = new Date();
+      date.setTime(+drop.drop_date);
+      drop.drop_date = date.toLocaleDateString();
+      return drop;
+    });
+
+    return NextResponse.json(latestParam ? result[0] || '' : result, { status: 200 });
   } catch (error) {
     return NextResponse.json({ error: `Failed to fetch drops: ${error}` }, { status: 500 });
   }
@@ -56,7 +64,7 @@ export async function POST(request: Request) {
     const album = await run('INSERT INTO albums (name, deezer_id, cover_url, artist) VALUES (?, ?, ?, ?)', [albumTitle, albumId, albumCover, artist?.id]);
   
     // Create a new drop
-    const date = new Date().getTime();
+    const date = new Date().getTime() + '';
     const drop = await run('INSERT INTO drops (artist, album, date, user) VALUES (?, ?, ?, ?)', [artist?.id, album?.id, date, userId]);
   
     return new Response(JSON.stringify({ drop }), {
